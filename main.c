@@ -78,8 +78,8 @@ int main(int argc, char const *argv[]) {
         };
         sprintf(msg.s_payload, log_started_fmt, local_pid, getpid(), getppid());
         msg.s_header.s_payload_len = strlen(msg.s_payload);
-        send_multicast(NULL, &msg);
         log_started();
+        send_multicast(NULL, &msg);
     }
 
     // ------------ Recieve STARTED message ------------
@@ -104,8 +104,8 @@ int main(int argc, char const *argv[]) {
         };
         sprintf(msg.s_payload, log_done_fmt, local_pid);
         msg.s_header.s_payload_len = strlen(msg.s_payload);
-        send_multicast(NULL, &msg);
         log_done();
+        send_multicast(NULL, &msg);
     }
 
     // ------------ Recieve DONE message ------------
