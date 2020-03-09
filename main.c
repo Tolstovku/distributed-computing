@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "child.h"
+#include "parent.h"
 
 #include "io.h"
 #include "ipc.h"
@@ -12,8 +14,6 @@
 void close_pipes_that_dont_belong_to_us();
 
 int main(int argc, char const *argv[]) {
-    size_t num_children;
-
     if (argc == 3 && strcmp(argv[1], "-p") == 0) {
         num_children = strtol(argv[2], NULL, 10);
     } else {
@@ -22,7 +22,7 @@ int main(int argc, char const *argv[]) {
     }
 
     if (num_children >= MAX_PROCESSES) {
-        fprintf(stderr, "Error: Too many children requested.\n");
+        fprintf(stderr, "Error: There can't be more than 9 children.\n");
         return 1;
     }
 
@@ -43,7 +43,6 @@ int main(int argc, char const *argv[]) {
             }
         }
     }
-
 
     pid_t process_pids[num_children];
     process_pids[PARENT_ID] = getpid();
@@ -67,67 +66,15 @@ int main(int argc, char const *argv[]) {
 
     close_pipes_that_dont_belong_to_us();
 
-    //  ------------ Send STARTED message ------------
-    if (local_pid != PARENT_ID) {
-        Message msg = {
-            .s_header =
-                {
-                    .s_magic = MESSAGE_MAGIC,
-                    .s_type = STARTED,
-                },
-        };
-        sprintf(msg.s_payload, log_started_fmt, local_pid, getpid(), getppid());
-        msg.s_header.s_payload_len = strlen(msg.s_payload);
-        log_started();
-        send_multicast(NULL, &msg);
-    }
-
-    // ------------ Recieve STARTED message ------------
-    for (size_t i = 1; i <= num_children; i++) {
-        Message msg;
-        if (i == local_pid) {
-            continue;
-        }
-        receive(NULL, i, &msg);
-        printf("I %d Received from %2d\n ", local_pid, i);
-    }
-    log_received_all_started();
-
-    // ------------ Send DONE message ------------
-    if (local_pid != PARENT_ID) {
-        Message msg = {
-            .s_header =
-                {
-                    .s_magic = MESSAGE_MAGIC,
-                    .s_type = DONE,
-                },
-        };
-        sprintf(msg.s_payload, log_done_fmt, local_pid);
-        msg.s_header.s_payload_len = strlen(msg.s_payload);
-        log_done();
-        send_multicast(NULL, &msg);
-    }
-
-    // ------------ Recieve DONE message ------------
-    for (size_t i = 1; i <= num_children; i++) {
-        Message msg;
-        if (i == local_pid) {
-            continue;
-        }
-        receive(NULL, i, &msg);
-    }
-    log_received_all_done();
-
     if (local_pid == PARENT_ID) {
-        // Wait for the children to stop
-        for (size_t i = 1; i <= num_processes; i++) {
-            waitpid(process_pids[i], NULL, 0);
-        }
+        run_parent_routine(process_pids);
+    } else {
+        run_child_routine();
     }
 
     log_close();
     return 0;
-}  // main
+}
 
 void close_pipes_that_dont_belong_to_us() {
     for (size_t source = 0; source < num_processes; source++) {

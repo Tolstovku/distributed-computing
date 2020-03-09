@@ -6,7 +6,6 @@
  *
  * Students must not modify this file!
  */
-
 #ifndef __IFMO_DISTRIBUTED_CLASS_PA1__H
 #define __IFMO_DISTRIBUTED_CLASS_PA1__H
 
