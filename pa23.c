@@ -1,3 +1,4 @@
+#include "banking.h"
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,8 +13,8 @@
 #include "log.h"
 
 void close_pipes_that_dont_belong_to_us();
-
-int main(int argc, char const *argv[]) {
+int main(int argc, char * argv[])
+{
     if (argc == 3 && strcmp(argv[1], "-p") == 0) {
         num_children = strtol(argv[2], NULL, 10);
     } else {
@@ -31,17 +32,19 @@ int main(int argc, char const *argv[]) {
     log_init();
 
     //  ------------ Create file descriptors. ------------
-    for (size_t source = 0; source < num_processes; source++) {
-        for (size_t destination = 0; destination < num_processes;
-             destination++) {
+    for (size_t id = 0; id < num_processes; source++) {
             if (source != destination) {
                 int fildes[2];
                 pipe(fildes);
-                reader[source][destination] = fildes[0];
-                writer[source][destination] = fildes[1];
+                unsigned int flags = fcntl(fildes[0], F_GETFL, 0);
+                unsigned int flags1 = fcntl(fildes[1], F_GETFL, 0);
+                fcntl(fildes[0], F_SETFL, flags | O_NONBLOCK);
+                fcntl(fildes[1], F_SETFL, flags1 | O_NONBLOCK);
+                
+                reader[id] = fildes[0];
+                writer[id] = fildes[1];
                 log_pipe_opened(source, destination);
             }
-        }
     }
 
     pid_t process_pids[num_children];
@@ -64,7 +67,7 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-    close_pipes_that_dont_belong_to_us();
+    // close_pipes_that_dont_belong_to_us();
 
     if (local_pid == PARENT_ID) {
         run_parent_routine(process_pids);
@@ -73,6 +76,8 @@ int main(int argc, char const *argv[]) {
     }
 
     log_close();
+    return 0;;
+
     return 0;
 }
 
@@ -93,4 +98,12 @@ void close_pipes_that_dont_belong_to_us() {
             }
         }
     }
+}
+
+
+
+void transfer(void * parent_data, local_id src, local_id dst,
+              balance_t amount)
+{
+    // student, please implement me
 }

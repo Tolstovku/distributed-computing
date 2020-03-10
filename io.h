@@ -2,12 +2,13 @@
 #define __IFMO_DISTRIBUTED_CLASS_PA1__IO__H
 
 #include "ipc.h"
+#include "child.h"
 
 enum {
     MAX_PROCESSES = 10,
 };
 
-local_id local_pid;
+Child self;
 size_t num_processes;
 size_t num_children;
 size_t num_children;
